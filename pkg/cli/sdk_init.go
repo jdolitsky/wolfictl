@@ -31,8 +31,9 @@ func SDKInit() *cobra.Command {
 					return err
 				}
 				for _, entry := range entries {
+					fmt.Println("EEK " + d + " || " + entry.Name())
 					srcPath := path.Join(d, entry.Name())
-					dstPath := path.Join(targetDir, d, entry.Name())
+					dstPath := path.Join(targetDir, strings.TrimPrefix(d, "static"), entry.Name())
 					if entry.IsDir() {
 						// TODO: recursive copy of embedded
 						fmt.Printf("creating dir %s\n", dstPath)

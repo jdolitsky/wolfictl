@@ -1,24 +1,52 @@
 name: ci
 
 on:
-  pull_request:
-    branches: ['main']
-  push:
-    branches: ['main']
+  push: pin-apko
 
 jobs:
   build:
     name: build
     runs-on: ubuntu-latest
-
+    outputs:
+      matrix: ${{ steps.generate-matrix.outputs.matrix }}
+      matrix-unique-images: ${{ steps.generate-matrix.outputs.matrix-unique-images }}
     steps:
-      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v2.4.0
+      # Grab upstream actions and store them in temp dir
+      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # v3.1.0
+        with:
+          repository: chainguard-images/images
+      - id: save-actions
+        run: |
+          export UPSTREAM_ACTIONS_ROOTDIR="$(mktemp -d)"
+          cp -r ./.github "${UPSTREAM_ACTIONS_ROOTDIR}"
+          echo "upstream-actions-rootdir=${IMAGES_ROOTDIR}" >> $GITHUB_OUTPUT
 
+      # Checkout, build, and test
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v2.4.0
       - uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f # v3.0.0
         with:
           go-version: 1.19
           check-latest: true
-
       - uses: chainguard-dev/actions/goimports@main
       - run: make wolfictl
       - run: make test
+
+      # Skaffold an SDK image
+      - id: sdk-init
+        name: Initialize a fresh SDK layout
+        run: |
+          export IMAGES_ROOTDIR="$(mktemp -d)"
+          ./wolfictl sdk init "${SDK_DIR}/images/sdk"
+          echo "images-rootdir=${IMAGES_ROOTDIR}" >> $GITHUB_OUTPUT
+      
+      # Generate build matrix from images/ dir (just SDK for now)
+      - id: generate-matrix
+        uses: ${{ steps.save-actions.outputs.upstream-actions-rootdir }}/.github/actions/generate-matrix
+        with:
+          repository: chainguard-images/images
+
+  release:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.build.outputs.matrix) }}
