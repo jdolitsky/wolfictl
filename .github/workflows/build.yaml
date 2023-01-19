@@ -41,8 +41,13 @@ jobs:
           ./wolfictl sdk init images/sdk
       
       # Generate build matrix from images/ dir (just SDK for now)
+      - id: generate-matrix-setup
+        run: |
+          rm -rf .github/actions
+          mkdir .github/actions
+          mv /tmp/upstream-actions/.github/actions .github/actions
       - id: generate-matrix
-        uses: /tmp/upstream-actions/.github/actions/generate-matrix
+        uses: .github/actions/generate-matrix
         with:
           repository: chainguard-images/images
 
