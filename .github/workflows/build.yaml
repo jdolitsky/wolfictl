@@ -1,7 +1,8 @@
 name: ci
 
 on:
-  push: pin-apko
+  push:
+    - pin-apko
 
 jobs:
   build:
