@@ -19,9 +19,9 @@ jobs:
           repository: chainguard-images/images
       - id: save-actions
         run: |
-          export UPSTREAM_ACTIONS_ROOTDIR="$(mktemp -d)"
-          cp -r ./.github "${UPSTREAM_ACTIONS_ROOTDIR}"
-          echo "upstream-actions-rootdir=${IMAGES_ROOTDIR}" >> $GITHUB_OUTPUT
+          rm -rf /tmp/upstream-actions
+          mkdir /tmp/upstream-actions
+          cp -r ./.github /tmp/upstream-actions
 
       # Checkout, build, and test
       - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v2.4.0
@@ -37,13 +37,12 @@ jobs:
       - id: sdk-init
         name: Initialize a fresh SDK layout
         run: |
-          export IMAGES_ROOTDIR="$(mktemp -d)"
-          ./wolfictl sdk init "${SDK_DIR}/images/sdk"
-          echo "images-rootdir=${IMAGES_ROOTDIR}" >> $GITHUB_OUTPUT
+          rm -rf images/
+          ./wolfictl sdk init images/sdk
       
       # Generate build matrix from images/ dir (just SDK for now)
       - id: generate-matrix
-        uses: ${{ steps.save-actions.outputs.upstream-actions-rootdir }}/.github/actions/generate-matrix
+        uses: /tmp/upstream-actions/.github/actions/generate-matrix
         with:
           repository: chainguard-images/images
 
